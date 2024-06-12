@@ -30,8 +30,8 @@ bookstore:
     base_url: "/books"
 
   db:
-    host: db
-    dbname: postgres
+    host: 192.168.29.65
+    dbname: bookstore
     port: 5432
     db_type: postgresql
     log_level: DEBUG

@@ -11,8 +11,3 @@ LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO').upper()
 POOL_RECYCLE = int(os.environ['POOL_RECYCLE'])
 DB_POOL_SIZE = int(os.getenv('DB_POOL_SIZE', default='250'))
 DB_MAX_OVERFLOW = int(os.getenv('DB_MAX_OVERFLOW', default='100'))
-# ITEM_API_END_POINT = os.environ.get('ITEM_API_END_POINT', Ic.ITEM_API_END_POINT)
-# ITEM_CATEGORY_API_END_POINT = os.environ.get('ITEM_CATEGORY_API_END_POINT',
-#                                              Ic.ITEM_CATEGORY_API_END_POINT)
-# ITEM_LOCATION_API_END_POINT = os.environ.get('ITEM_LOCATION_API_END_POINT',
-#                                              Ic.ITEM_LOCATION_API_END_POINT)
