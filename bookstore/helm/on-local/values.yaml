@@ -1,0 +1,46 @@
+######################################
+# images
+######################################
+images:
+  #registry:
+  repository: bookstore
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+
+######################################
+# pods
+######################################
+containerPort: 8000
+updateStrategy: RollingUpdate
+podManagementPolicy: OrderedReady
+podAnnotations: {}
+replicaCount: 1
+terminationGracePeriodSeconds: 40
+pdb:
+  minAvailable: 1
+
+######################################
+# service
+######################################
+bookstore:
+  name: "book-store"
+  namespace: "data"
+  api:
+    api_origin: "http://localhost/"
+    base_url: "/books"
+
+  db:
+    host: db
+    dbname: postgres
+    port: 5432
+    db_type: postgresql
+    log_level: DEBUG
+    skey: skey
+
+  pool_recycle: 1200
+  pool_size: 250
+  max_overflow: 100
+
+  service:
+    port: 30021
+  containerPort: 8000

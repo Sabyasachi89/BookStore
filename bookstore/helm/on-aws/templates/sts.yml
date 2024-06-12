@@ -1,0 +1,13 @@
+spec:
+  container:
+    volumeMount:
+      name:
+      path:
+  volumeClaimTemplates:
+    - metaData:
+        name:
+      spec:
+        accessModes: ['ReadWriteOnce']
+        resources:
+          requests:
+            storage: 1Gi

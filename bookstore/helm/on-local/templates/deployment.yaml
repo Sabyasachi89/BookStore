@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.bookstore.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.bookstore.name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.bookstore.name }}
+    spec:
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: {{ .Values.bookstore.name }}
+        matchLabelKeys:
+        - pod-template-hash
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      containers:
+      - env:
+        - name: PYTHONPATH
+          value: "src/:../db/src/:$PYTHONPATH"
+        - name: POSTGRES_DB_NAME
+          value: {{ .Values.bookstore.db.dbname | quote }}
+        - name: POSTGRES_HOST
+          value: {{ .Values.bookstore.db.host | quote }}
+        - name: POSTGRES_PORT
+          value: {{ .Values.bookstore.db.port | quote }}
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.bookstore.db.skey }}
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.bookstore.db.skey }}
+              key: POSTGRES_PASSWORD
+        - name: DB_TYPE
+          value: {{ .Values.bookstore.db.db_type | quote }}
+        - name: LOG_LEVEL
+          value: {{ .Values.bookstore.db.log_level | quote }}
+        - name: API_ORIGIN
+          value: {{ .Values.bookstore.api.api_origin | quote }}
+        - name: BASE_URL
+          value: {{ .Values.bookstore.api.base_url | quote }}
+        - name: POOL_RECYCLE
+          value: {{ .Values.bookstore.pool_recycle | quote }}
+        - name: POOL_SIZE
+          value: {{ .Values.bookstore.pool_size | quote }}
+        - name: MAX_OVERFLOW
+          value: {{ .Values.bookstore.max_overflow | quote }}
+        # command: ["sh", "-c", 'rm -f app/.env && cd db && rm -f .env && pipenv install && pipenv run alembic upgrade head && cd .. && pipenv run gunicorn -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --worker-connections 10 app.src.main:app']
+        exec:
+          command: [ 'rm -f app/.env && pipenv install && cd db && rm -f .env && pipenv install && pipenv run alembic upgrade head && cd ..  && pipenv run gunicorn -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --worker-connections 10 app.src.main:app' ]
+          args: [ "" ]
+        image: {{ printf "%s:%s" .Values.images.repository (.Values.images.tag | toString) | quote }}
+        imagePullPolicy:  {{ .Values.images.pullPolicy }}
+        name: {{ .Values.bookstore.name }}
+        lifecycle:
+          preStop:
+            exec:
+              command: ["sh", "-c", "sleep 8"]
+        ports:
+        - containerPort: {{ .Values.bookstore.containerPort }}
+          protocol: TCP
+      restartPolicy: Always

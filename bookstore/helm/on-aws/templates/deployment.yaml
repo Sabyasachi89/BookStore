@@ -1,0 +1,114 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.bookstore.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.bookstore.name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.bookstore.name }}
+    spec:
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: {{ .Values.bookstore.name }}
+        matchLabelKeys:
+        - pod-template-hash
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      initContainers:
+      - env:
+        - name: PYTHONPATH
+          value: "${PYTHONPATH}:/usr/src/app/app/src"
+        - name: LOG_LEVEL
+          value: {{ .Values.bookstore.log_level | quote }}
+        - name: POSTGRES_DB_NAME
+          value: {{ .Values.bookstore.db.dbname | quote }}
+        - name: POSTGRES_HOST
+          value: {{ .Values.bookstore.db.host | quote }}
+        - name: POSTGRES_PORT
+          value: {{ .Values.bookstore.db.port | quote }}
+        - name: DB_TYPE
+          value: {{ .Values.bookstore.db.db_type | quote }}
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.bookstore.db.skey }}  
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.bookstore.db.skey }}  
+              key: POSTGRES_PASSWORD
+        - name: API_ORIGIN
+          value: {{ .Values.bookstore.api.api_origin | quote }}
+        - name: BASE_URL
+          value: {{ .Values.bookstore.api.base_url | default "/ngp/dspf/v1/internal" | quote }}
+        - name: POOL_RECYCLE
+          value: {{ .Values.bookstore.pool_recycle | quote }}
+        command: ["sh", "-c", 'cd db && rm -f .env && pipenv install && pipenv run alembic upgrade head']
+        args: [""]
+        image: {{ printf "%s/%s:%s" .Values.images.registry .Values.images.repository (.Values.images.tag | toString) | quote }}
+        imagePullPolicy: Always
+        name: {{ .Values.bookstore.initname }}
+      containers:
+      - env:
+        - name: PYTHONPATH
+          value: "${PYTHONPATH}:/usr/src/app/app/src"
+        - name: LOG_LEVEL
+          value: {{ .Values.bookstore.log_level | quote }}
+        - name: POSTGRES_DB_NAME
+          value: {{ .Values.bookstore.db.dbname | quote }}
+        - name: POSTGRES_HOST
+          value: {{ .Values.bookstore.db.host | quote }}
+        - name: POSTGRES_PORT
+          value: {{ .Values.bookstore.db.port | quote }}
+        - name: DB_TYPE
+          value: {{ .Values.bookstore.db.db_type | quote }}
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.bookstore.db.skey }}  
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.bookstore.db.skey }}  
+              key: POSTGRES_PASSWORD
+        - name: API_ORIGIN
+          value: {{ .Values.bookstore.api.api_origin | quote }}
+        - name: POOL_RECYCLE
+          value: {{ .Values.bookstore.pool_recycle | quote }}
+        - name: BASE_URL
+          value: {{ .Values.bookstore.api.base_url | quote }}
+        - name: API_END_POINT
+          value: {{ .Values.bookstore.api.api_end_point | default "/bookstore" | quote }}
+        # command: ["sh", "-c", 'rm -f .env && cd ../app && pipenv run gunicorn -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --worker-connections 10 main:app']
+        exec:
+          command: [ 'rm -f app/.env && cd ../app && pipenv run gunicorn -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --worker-connections 10 app.src.main:app' ]
+          args: [ "" ]
+        image: {{ printf "%s/%s:%s" .Values.images.registry .Values.images.repository (.Values.images.tag | toString) | quote }}
+        imagePullPolicy: Always
+        name: {{ .Values.bookstore.name }}
+        lifecycle:
+          preStop:
+            exec:
+              command: ["sh", "-c", "sleep 8"]
+        ports:
+        - containerPort: {{ .Values.bookstore.containerPort }}
+          protocol: TCP
+        resources:
+          limits:
+            memory: 512Mi
+            cpu: 200m
+          requests:
+            memory: 128Mi
+            cpu: 200m
+
+      restartPolicy: Always

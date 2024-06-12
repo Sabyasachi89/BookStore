@@ -1,0 +1,47 @@
+######################################
+# images
+######################################
+images:
+  #  registry: <registry_id>.dkr.ecr.ap-northeast-1.amazonaws.com
+  repository: bookstore
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+######################################
+# pods
+######################################
+containerPort: 8000
+updateStrategy: RollingUpdate
+podManagementPolicy: OrderedReady
+podAnnotations: {}
+replicaCount: 1
+terminationGracePeriodSeconds: 40
+pdb:
+  minAvailable: 1
+
+######################################
+# service
+######################################
+bookstore:
+  name: "book-store"
+  initname: "init-bookstore"
+  namespace: "data"
+  log_level: "INFO"
+  api:
+    api_origin: "http://localhost/"
+    base_url: "/books"
+
+
+  db:
+    host: db
+    dbname: postgres
+    port: 5432
+    db_type: postgresql
+    log_level: DEBUG
+    skey: skey
+    
+  pool_recycle: 1200
+
+  service:
+    port: 30021
+  containerPort: 8000

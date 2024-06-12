@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.bookstore.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  type: NodePort
+  selector:
+    app.kubernetes.io/name: {{ .Values.bookstore.name }}
+  ports:
+    - name: http
+      protocol: TCP
+      port: {{ .Values.bookstore.containerPort }}
+      nodePort: {{ .Values.bookstore.service.port }}
